@@ -17,11 +17,11 @@ app.get("/", (req, res) => {
   }
 });
 
-// Import route user
+// Import routes user
 const UserRoutes = require("./routes/user");
 app.use(UserRoutes);
 
-// Import route offer
+// Import routes offer
 const OfferRoutes = require("./routes/offer");
 app.use(OfferRoutes);
 
