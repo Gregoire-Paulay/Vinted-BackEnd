@@ -1,16 +1,12 @@
 const express = require("express");
-const Offer = require("../models/Offer");
 const fileUpload = require("express-fileupload");
 const cloudinary = require("cloudinary").v2;
 const isAuthenticated = require("../middlewares/isAuthenticated");
 
+const User = require("../models/User");
+const Offer = require("../models/Offer");
 const router = express.Router();
-// Authentification cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+
 // constante pour convertir mon image et l'envoyer ensuite à cloudinary
 const convertToBase64 = (file) => {
   return `data:${file.mimetype};base64,${file.data.toString("base64")}`;
@@ -55,8 +51,8 @@ router.post("/offers", isAuthenticated, fileUpload(), async (req, res) => {
 router.put("/offers/:id", isAuthenticated, fileUpload(), async (req, res) => {
   try {
     const foundOffer = await Offer.findById(req.params.id).populate("owner");
-    console.log("Mon offre a modifié ==> ", foundOffer);
-    // console.log("req.user ==>", req.user);
+    // console.log("Mon offre a modifié ==> ", foundOffer);
+
     if (foundOffer.owner.account.username === req.user.account.username) {
       console.log(req.body);
       const { title, description, price, condition, city, brand, size, color } =
@@ -72,16 +68,17 @@ router.put("/offers/:id", isAuthenticated, fileUpload(), async (req, res) => {
       foundOffer.product_details[3] = { Couleur: color };
       foundOffer.product_details[4] = { Emplacement: city };
 
-      // const convertedFile = convertToBase64(req.files.picture);
-      // const cloudinaryResponse = await cloudinary.uploader.upload(
-      //   convertedFile,
-      //   {
-      //     folder: `vinted/offer/${foundOffer._id}`,
-      //     public_id: req.user.account.username,
-      //   }
-      // );
-      // foundOffer.product_image = cloudinaryResponse.secure_url;
-      console.log("Mon offre modifié ==>", foundOffer);
+      const convertedFile = convertToBase64(req.files.picture);
+      const cloudinaryResponse = await cloudinary.uploader.upload(
+        convertedFile,
+        {
+          folder: `vinted/offer/${foundOffer._id}`,
+          public_id: req.user.account.username,
+        }
+      );
+      foundOffer.product_image = cloudinaryResponse.secure_url;
+
+      // console.log("Mon offre modifié ==>", foundOffer);
       await foundOffer.save();
       return res.status(202).json(foundOffer);
     } else {
@@ -96,11 +93,15 @@ router.put("/offers/:id", isAuthenticated, fileUpload(), async (req, res) => {
 router.delete("/offers/:id", isAuthenticated, async (req, res) => {
   try {
     if (req.params.id) {
-      // req.user, findOne
+      const foundOffer = await Offer.findById(req.params.id).populate("owner");
 
-      //
-      // await Offer.findByIdAndDelete(req.params.id);
-      return res.status(200).json({ message: "Removed Offer" });
+      if (foundOffer.owner.account.username === req.user.account.username) {
+        // console.log(foundOffer);
+        await Offer.findByIdAndDelete(req.params.id);
+        return res.status(200).json({ message: "Removed Offer" });
+      } else {
+        return res.status(400).json({ message: "Unauthorized" });
+      }
     } else {
       return res.status(400).json({ message: "Missing id" });
     }
