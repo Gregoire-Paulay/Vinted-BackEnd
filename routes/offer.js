@@ -1,11 +1,13 @@
 const express = require("express");
+const router = express.Router();
+
 const fileUpload = require("express-fileupload");
 const cloudinary = require("cloudinary").v2;
+// Import de mon middleware
 const isAuthenticated = require("../middlewares/isAuthenticated");
 
 const User = require("../models/User");
 const Offer = require("../models/Offer");
-const router = express.Router();
 
 // constante pour convertir mon image et l'envoyer ensuite à cloudinary
 const convertToBase64 = (file) => {
@@ -19,28 +21,34 @@ router.post("/offers", isAuthenticated, fileUpload(), async (req, res) => {
       req.body;
     // console.log("req.user ===>", req.user);
 
-    const newOffer = new Offer({
-      product_name: title,
-      product_description: description,
-      product_price: price,
-      product_details: [
-        { Marque: brand },
-        { Taille: size },
-        { État: condition },
-        { Couleur: color },
-        { Emplacement: city },
-      ],
-      owner: req.user,
-    });
+    if (title && price && req.files?.picture) {
+      const newOffer = new Offer({
+        product_name: title,
+        product_description: description,
+        product_price: price,
+        product_details: [
+          { Marque: brand },
+          { Taille: size },
+          { État: condition },
+          { Couleur: color },
+          { Emplacement: city },
+        ],
+        owner: req.user,
+      });
 
-    const convertedFile = convertToBase64(req.files.picture);
-    const cloudinaryResponse = await cloudinary.uploader.upload(convertedFile, {
-      folder: `vinted/offer/${newOffer._id}`,
-      public_id: req.user.account.username,
-    });
-    newOffer.product_image = cloudinaryResponse.secure_url;
+      const convertedFile = convertToBase64(req.files.picture);
+      const cloudinaryResponse = await cloudinary.uploader.upload(
+        convertedFile,
+        {
+          folder: `vinted/offer/${newOffer._id}`,
+          public_id: req.user.account.username,
+        }
+      );
+      newOffer.product_image = cloudinaryResponse.secure_url;
 
-    await newOffer.save();
+      await newOffer.save();
+    }
+
     return res.status(201).json(newOffer);
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -113,9 +121,11 @@ router.delete("/offers/:id", isAuthenticated, async (req, res) => {
 // 4 - Route pour lire les annonces avec des filtres
 router.get("/offers", async (req, res) => {
   try {
-    // filtre de prix et de nom
-    const filters = {};
     const { priceMin, title, page, priceMax, sort } = req.query;
+
+    // filtre de prix et de nom
+    let filters = {};
+
     if (priceMin && priceMax) {
       filters.product_price = { $gte: priceMin, $lte: priceMax };
     } else if (priceMin) {
@@ -133,8 +143,8 @@ router.get("/offers", async (req, res) => {
       sortOffer.product_price = sort.slice(6);
     }
 
-    // On défini par défaut une limit à 3 offres par pages
-    const limit = 3;
+    // On défini par défaut une limit à 20 offres par pages
+    const limit = 20;
     const skip = (page - 1) * limit;
 
     const offers = await Offer.find(filters)
