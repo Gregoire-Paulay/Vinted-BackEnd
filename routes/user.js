@@ -40,7 +40,6 @@ router.post("/user/signup", fileUpload(), async (req, res) => {
           hash: hash,
           salt: salty,
         });
-
         // 2 - Si je recois une image, upload sur Cloudinary, puis on enregistre le résultat dans la clef avatar de la clef account de l'utilisateur
         if (req.files?.avatar) {
           const cloudinaryResponse = await cloudinary.uploader.upload(
@@ -50,7 +49,9 @@ router.post("/user/signup", fileUpload(), async (req, res) => {
               public_id: "avatar",
             }
           );
-          newUser.account.avatar = cloudinaryResponse.secure_url;
+          // console.log("Réponse cloudinary ==>", cloudinaryResponse);
+          newUser.account.avatar = cloudinaryResponse;
+          // console.log("newUser==>", newUser);
         }
 
         // 3 - Sauvgarde de l'utilisateur dans la BDD

@@ -16,6 +16,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// console.log(process.env);
 // Route de base du serveur
 app.get("/", (req, res) => {
   try {

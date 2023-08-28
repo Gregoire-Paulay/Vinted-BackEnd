@@ -21,34 +21,29 @@ router.post("/offers", isAuthenticated, fileUpload(), async (req, res) => {
       req.body;
     // console.log("req.user ===>", req.user);
 
-    if (title && price && req.files?.picture) {
-      const newOffer = new Offer({
-        product_name: title,
-        product_description: description,
-        product_price: price,
-        product_details: [
-          { Marque: brand },
-          { Taille: size },
-          { État: condition },
-          { Couleur: color },
-          { Emplacement: city },
-        ],
-        owner: req.user,
-      });
+    const newOffer = new Offer({
+      product_name: title,
+      product_description: description,
+      product_price: price,
+      product_details: [
+        { Marque: brand },
+        { Taille: size },
+        { État: condition },
+        { Couleur: color },
+        { Emplacement: city },
+      ],
+      owner: req.user,
+    });
+    console.log(newOffer);
 
-      const convertedFile = convertToBase64(req.files.picture);
-      const cloudinaryResponse = await cloudinary.uploader.upload(
-        convertedFile,
-        {
-          folder: `vinted/offer/${newOffer._id}`,
-          public_id: req.user.account.username,
-        }
-      );
-      newOffer.product_image = cloudinaryResponse.secure_url;
+    const convertedFile = convertToBase64(req.files.picture);
+    const cloudinaryResponse = await cloudinary.uploader.upload(convertedFile, {
+      folder: `vinted/offer/${newOffer._id}`,
+      public_id: req.user.account.username,
+    });
+    newOffer.product_image = cloudinaryResponse;
 
-      await newOffer.save();
-    }
-
+    await newOffer.save();
     return res.status(201).json(newOffer);
   } catch (error) {
     return res.status(400).json({ message: error.message });
