@@ -88,12 +88,12 @@ router.post("/user/login", async (req, res) => {
       } else {
         return res
           .status(400)
-          .json({ message: "l'email ou le mot de passe est incorrecte" });
+          .json({ message: "l'email ou mot de passe incorrecte" });
       }
     } else {
       return res
         .status(400)
-        .json({ message: "l'email ou le mot de passe est incorrecte" });
+        .json({ message: "l'email ou mot de passe incorrecte" });
     }
   } catch (error) {
     return res.status(400).json({ message: error.message });
